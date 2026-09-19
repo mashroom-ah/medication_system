@@ -1,100 +1,55 @@
-from intakes import (
+from models.intakes import (
+    Intake,
     cancel_intake,
     create_intake,
     get_intakes_by_date,
     is_medicine_taken,
 )
+from models.medicines import Medicine
+from models.schedules import Schedule
+from models.users import User
 
 
-def test_create_intake():
-    intakes = []
-
-    intake = create_intake(
-        intakes,
+def make_schedule() -> Schedule:
+    return Schedule(
         1,
-        "2026-09-13"
+        User(1, "Мария", 19),
+        Medicine(1, "Витамин C", 10, "мг"),
+        12,
+        0,
     )
 
-    assert intake["id"] == 1
-    assert intake["schedule_id"] == 1
-    assert intake["date"] == "2026-09-13"
-    assert intake["taken"] is True
+
+def test_create_intake() -> None:
+    intakes: list[Intake] = []
+    intake = create_intake(intakes, make_schedule(), "2026-09-13")
+    assert intake.id == 1
+    assert intake.taken is True
+    assert intake.schedule.id == 1
 
 
-def test_is_medicine_taken_for_date():
+def test_is_medicine_taken_for_date() -> None:
+    schedule = make_schedule()
+    intakes = [Intake(1, schedule, "2026-09-13", True)]
+    assert is_medicine_taken(intakes, 1, "2026-09-13")
+    assert not is_medicine_taken(intakes, 1, "2026-09-14")
+
+
+def test_cancel_intake_keeps_object() -> None:
+    schedule = make_schedule()
+    intake = Intake(1, schedule, "2026-09-13", True)
+    intakes = [intake]
+    assert cancel_intake(intakes, 1, "2026-09-13")
+    assert intakes == [intake]
+    assert intake.taken is False
+
+
+def test_get_intakes_by_date() -> None:
+    schedule = make_schedule()
     intakes = [
-        {
-            "id": 1,
-            "schedule_id": 1,
-            "date": "2026-09-13",
-            "taken": True
-        }
+        Intake(1, schedule, "2026-09-13", True),
+        Intake(2, schedule, "2026-09-14", True),
     ]
-
-    assert is_medicine_taken(
-        intakes,
-        1,
-        "2026-09-13"
-    ) is True
-
-
-def test_medicine_not_taken_on_another_date():
-    intakes = [
-        {
-            "id": 1,
-            "schedule_id": 1,
-            "date": "2026-09-13",
-            "taken": True
-        }
-    ]
-
-    assert is_medicine_taken(
-        intakes,
-        1,
-        "2026-09-14"
-    ) is False
-
-
-def test_cancel_intake():
-    intakes = [
-        {
-            "id": 1,
-            "schedule_id": 1,
-            "date": "2026-09-13",
-            "taken": True
-        }
-    ]
-
-    result = cancel_intake(
-        intakes,
-        1,
-        "2026-09-13"
-    )
-
-    assert result is True
-    assert intakes == []
-
-
-def test_get_intakes_by_date():
-    intakes = [
-        {
-            "id": 1,
-            "schedule_id": 1,
-            "date": "2026-09-13",
-            "taken": True
-        },
-        {
-            "id": 2,
-            "schedule_id": 1,
-            "date": "2026-09-14",
-            "taken": True
-        }
-    ]
-
-    result = get_intakes_by_date(
-        intakes,
-        "2026-09-13"
-    )
-
+    result = get_intakes_by_date(intakes, "2026-09-13")
     assert len(result) == 1
-    assert result[0]["id"] == 1
+    assert result[0].id == 1

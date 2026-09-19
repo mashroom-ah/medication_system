@@ -1,91 +1,58 @@
 from datetime import datetime
 
-from schedules import (
-    add_schedule,
-    is_schedule_due,
-    sort_schedules,
-)
+from models.medicines import Medicine
+from models.schedules import Schedule, add_schedule, sort_schedules
+from models.users import User
 
 
-def test_add_schedule():
-    schedules = []
+def make_schedule() -> Schedule:
+    return Schedule(
+        1,
+        User(1, "Мария", 19),
+        Medicine(1, "Витамин C", 10, "мг"),
+        12,
+        0,
+    )
 
+
+def test_schedule_links_objects() -> None:
+    schedule = make_schedule()
+    assert isinstance(schedule.user, User)
+    assert isinstance(schedule.medicine, Medicine)
+    assert schedule.medicine.name == "Витамин C"
+
+
+def test_add_schedule() -> None:
+    schedules: list[Schedule] = []
     schedule = add_schedule(
         schedules,
-        1,
-        1,
+        User(1, "Мария", 19),
+        Medicine(1, "Витамин C", 10, "мг"),
         12,
-        0
+        0,
     )
-
-    assert schedule["id"] == 1
-    assert schedule["user_id"] == 1
-    assert schedule["medicine_id"] == 1
-    assert schedule["hour"] == 12
-    assert schedule["minute"] == 0
+    assert schedule.id == 1
+    assert schedules == [schedule]
 
 
-def test_is_schedule_due():
-    schedule = {
-        "id": 1,
-        "user_id": 1,
-        "medicine_id": 1,
-        "hour": 12,
-        "minute": 0
-    }
+def test_schedule_due_and_status() -> None:
+    schedule = make_schedule()
+    assert schedule.is_due(datetime(2026, 9, 13, 12, 30))
+    assert not schedule.is_due(datetime(2026, 9, 13, 11, 30))
+    assert schedule.get_status(
+        True,
+        datetime(2026, 9, 13, 12, 30),
+    ) == "Препарат уже принят."
 
-    current_time = datetime(
-        2026,
+
+def test_sort_schedules() -> None:
+    first = make_schedule()
+    second = Schedule(
+        2,
+        first.user,
+        first.medicine,
         9,
-        13,
-        12,
-        30
+        30,
     )
-
-    assert is_schedule_due(
-        schedule,
-        current_time
-    ) is True
-
-
-def test_schedule_is_not_due():
-    schedule = {
-        "id": 1,
-        "user_id": 1,
-        "medicine_id": 1,
-        "hour": 12,
-        "minute": 0
-    }
-
-    current_time = datetime(
-        2026,
-        9,
-        13,
-        11,
-        30
-    )
-
-    assert is_schedule_due(
-        schedule,
-        current_time
-    ) is False
-
-
-def test_sort_schedules():
-    schedules = [
-        {
-            "id": 1,
-            "hour": 18,
-            "minute": 0
-        },
-        {
-            "id": 2,
-            "hour": 9,
-            "minute": 30
-        }
-    ]
-
-    result = sort_schedules(schedules)
-
-    assert result[0]["hour"] == 9
-    assert result[1]["hour"] == 18
+    result = sort_schedules([first, second])
+    assert result[0].hour == 9

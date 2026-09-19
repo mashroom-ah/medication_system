@@ -1,30 +1,33 @@
+from __future__ import annotations
+
 from datetime import date, datetime
 
-from intakes import (
+from models import Intake, Medicine, Schedule, User
+from models.intakes import (
     cancel_intake,
     create_intake,
-    get_intakes_by_date,
     is_medicine_taken,
+    show_intakes,
 )
-from medicines import (
+from models.medicines import (
     add_medicine,
     filter_medicines_by_dosage,
     find_medicine,
-    sort_medicines,
+    show_medicines,
 )
-from schedules import (
-    add_schedule,
-    get_schedule_status,
-    sort_schedules,
+from models.schedules import add_schedule, show_schedules
+from models.users import add_user, find_user, show_users
+from storage import (
+    load_intakes,
+    load_medicines,
+    load_schedules,
+    load_users,
+    save_intakes,
+    save_medicines,
+    save_schedules,
+    save_users,
 )
-from storage import load_data, save_data
-from users import add_user, find_user, sort_users
-from utils import (
-    input_age,
-    input_positive_int,
-    input_time,
-)
-
+from utils import input_age, input_date, input_positive_int, input_time
 
 USERS_FILE = "data/users.json"
 MEDICINES_FILE = "data/medicines.json"
@@ -32,99 +35,100 @@ SCHEDULES_FILE = "data/schedules.json"
 INTAKES_FILE = "data/intakes.json"
 
 
-def show_users(users: list[dict]) -> None:
-    """Выводит список пользователей."""
-    if not users:
-        print("Пользователей нет.")
-        return
-
-    for user in sort_users(users):
-        print(
-            f'ID: {user["id"]}, '
-            f'Имя: {user["name"]}, '
-            f'Возраст: {user["age"]}'
-        )
+def find_by_id(items: list, item_id: int) -> object | None:
+    """Находит объект с указанным идентификатором."""
+    for item in items:
+        if item.id == item_id:
+            return item
+    return None
 
 
-def show_medicines(medicines: list[dict]) -> None:
-    """Выводит список лекарств."""
-    if not medicines:
-        print("Лекарств нет.")
-        return
-
-    for medicine in sort_medicines(medicines):
-        print(
-            f'ID: {medicine["id"]}, '
-            f'Название: {medicine["name"]}, '
-            f'Дозировка: {medicine["dosage"]} '
-            f'{medicine["unit"]}'
-        )
-
-
-def show_schedules(
-    schedules: list[dict],
-    medicines: list[dict]
+def create_new_schedule(
+    schedules: list[Schedule],
+    users: list[User],
+    medicines: list[Medicine],
 ) -> None:
-    """Выводит список расписаний."""
-    if not schedules:
-        print("Расписаний нет.")
+    """Создаёт расписание после проверки связанных объектов."""
+    user_id = input_positive_int("ID пользователя: ")
+    medicine_id = input_positive_int("ID лекарства: ")
+    hour, minute = input_time("Введите время приема (ЧЧ:ММ): ")
+
+    user = find_by_id(users, user_id)
+    medicine = find_by_id(medicines, medicine_id)
+
+    if not isinstance(user, User):
+        print("Пользователь не найден.")
+        return
+    if not isinstance(medicine, Medicine):
+        print("Лекарство не найдено.")
         return
 
-    for schedule in sort_schedules(schedules):
-        medicine = None
-
-        for item in medicines:
-            if item["id"] == schedule["medicine_id"]:
-                medicine = item
-                break
-
-        if medicine is not None:
-            medicine_name = medicine["name"]
-        else:
-            medicine_name = "Неизвестное лекарство"
-
-        print(
-            f'ID: {schedule["id"]}, '
-            f'Лекарство: {medicine_name}, '
-            f'Время: {schedule["hour"]:02d}:'
-            f'{schedule["minute"]:02d}'
-        )
-
-
-def show_intakes(
-    intakes: list[dict],
-    intake_date: str
-) -> None:
-    """Выводит приемы за указанную дату."""
-    daily_intakes = get_intakes_by_date(
-        intakes,
-        intake_date
+    schedule = add_schedule(
+        schedules,
+        user,
+        medicine,
+        hour,
+        minute,
     )
+    save_schedules(SCHEDULES_FILE, schedules)
+    print(f"Расписание добавлено. ID: {schedule.id}")
 
-    if not daily_intakes:
-        print("За эту дату приемов нет.")
+
+def check_schedule(
+    schedules: list[Schedule],
+    intakes: list[Intake],
+) -> None:
+    """Показывает статус выбранного расписания."""
+    schedule_id = input_positive_int("ID расписания: ")
+    schedule = find_by_id(schedules, schedule_id)
+    if not isinstance(schedule, Schedule):
+        print("Расписание не найдено.")
         return
 
-    for intake in daily_intakes:
-        if intake["taken"]:
-            status = "принят"
-        else:
-            status = "не принят"
+    today = date.today().isoformat()
+    taken = is_medicine_taken(intakes, schedule.id, today)
+    print(schedule.get_status(taken, datetime.now()))
 
-        print(
-            f'ID: {intake["id"]}, '
-            f'Расписание: {intake["schedule_id"]}, '
-            f'Дата: {intake["date"]}, '
-            f'Статус: {status}'
-        )
+
+def take_medicine(
+    schedules: list[Schedule],
+    intakes: list[Intake],
+) -> None:
+    """Записывает приём лекарства за текущую дату."""
+    schedule_id = input_positive_int("ID расписания: ")
+    schedule = find_by_id(schedules, schedule_id)
+    if not isinstance(schedule, Schedule):
+        print("Расписание не найдено.")
+        return
+
+    today = date.today().isoformat()
+    if is_medicine_taken(intakes, schedule.id, today):
+        print("Прием на сегодня уже записан.")
+        return
+
+    intake = create_intake(intakes, schedule)
+    save_intakes(INTAKES_FILE, intakes)
+    print(f"Прием записан: {intake.date}")
+
+
+def cancel_medicine_intake(intakes: list[Intake]) -> None:
+    """Отменяет запись о приёме за выбранную дату."""
+    schedule_id = input_positive_int("ID расписания: ")
+    intake_date = input_date("Введите дату (ГГГГ-ММ-ДД): ")
+    result = cancel_intake(intakes, schedule_id, intake_date)
+    if result:
+        save_intakes(INTAKES_FILE, intakes)
+        print("Запись о приеме отменена.")
+    else:
+        print("Запись о приеме не найдена.")
 
 
 def main() -> None:
     """Запускает основное меню программы."""
-    users = load_data(USERS_FILE)
-    medicines = load_data(MEDICINES_FILE)
-    schedules = load_data(SCHEDULES_FILE)
-    intakes = load_data(INTAKES_FILE)
+    users = load_users(USERS_FILE)
+    medicines = load_medicines(MEDICINES_FILE)
+    schedules = load_schedules(SCHEDULES_FILE, users, medicines)
+    intakes = load_intakes(INTAKES_FILE, schedules)
 
     while True:
         print("\n=== Система учета лекарств ===")
@@ -149,85 +153,42 @@ def main() -> None:
             if choice == "1":
                 name = input("Введите имя: ")
                 age = input_age("Введите возраст: ")
-
-                user = add_user(
-                    users,
-                    name,
-                    age
-                )
-
-                save_data(
-                    USERS_FILE,
-                    users
-                )
-
-                print(
-                    f'Пользователь добавлен. '
-                    f'ID: {user["id"]}'
-                )
+                user = add_user(users, name, age)
+                save_users(USERS_FILE, users)
+                print(f"Пользователь добавлен. ID: {user.id}")
 
             elif choice == "2":
                 show_users(users)
 
             elif choice == "3":
-                query = input(
-                    "Введите имя для поиска: "
-                )
-
-                results = find_user(
-                    users,
-                    query
-                )
-
+                query = input("Введите имя для поиска: ")
+                results = find_user(users, query)
                 if results:
                     show_users(results)
                 else:
                     print("Пользователь не найден.")
 
             elif choice == "4":
-                name = input(
-                    "Введите название лекарства: "
-                )
-
-                dosage = input_positive_int(
-                    "Введите дозировку: "
-                )
-
-                unit = input(
-                    "Введите единицу измерения: "
-                )
-
+                name = input("Введите название лекарства: ")
+                dosage = input_positive_int("Введите дозировку: ")
+                unit = input("Введите единицу измерения: ")
                 medicine = add_medicine(
                     medicines,
                     name,
                     dosage,
-                    unit
+                    unit,
                 )
-
-                save_data(
-                    MEDICINES_FILE,
-                    medicines
-                )
-
-                print(
-                    f'Лекарство добавлено. '
-                    f'ID: {medicine["id"]}'
-                )
+                save_medicines(MEDICINES_FILE, medicines)
+                print(f"Лекарство добавлено. ID: {medicine.id}")
 
             elif choice == "5":
                 show_medicines(medicines)
 
             elif choice == "6":
                 query = input(
-                    "Введите название лекарства "
-                    "для поиска: "
+                    "Введите название лекарства для поиска: "
                 )
-
-                results = find_medicine(
-                    medicines,
-                    query
-                )
-
+                results = find_medicine(medicines, query)
                 if results:
                     show_medicines(results)
                 else:
@@ -237,204 +198,48 @@ def main() -> None:
                 min_dosage = input_positive_int(
                     "Минимальная дозировка: "
                 )
-
                 results = filter_medicines_by_dosage(
                     medicines,
-                    min_dosage
+                    min_dosage,
                 )
-
                 if results:
                     show_medicines(results)
                 else:
-                    print(
-                        "Лекарств с такой дозировкой нет."
-                    )
+                    print("Лекарств с такой дозировкой нет.")
 
             elif choice == "8":
-                user_id = input_positive_int(
-                    "ID пользователя: "
-                )
-
-                medicine_id = input_positive_int(
-                    "ID лекарства: "
-                )
-
-                hour, minute = input_time(
-                    "Введите время приема (ЧЧ:ММ): "
-                )
-
-                user_exists = False
-
-                for user in users:
-                    if user["id"] == user_id:
-                        user_exists = True
-                        break
-
-                medicine_exists = False
-
-                for medicine in medicines:
-                    if medicine["id"] == medicine_id:
-                        medicine_exists = True
-                        break
-
-                if not user_exists:
-                    print("Пользователь не найден.")
-                    continue
-
-                if not medicine_exists:
-                    print("Лекарство не найдено.")
-                    continue
-
-                schedule = add_schedule(
-                    schedules,
-                    user_id,
-                    medicine_id,
-                    hour,
-                    minute
-                )
-
-                save_data(
-                    SCHEDULES_FILE,
-                    schedules
-                )
-
-                print(
-                    f'Расписание добавлено. '
-                    f'ID: {schedule["id"]}'
-                )
+                create_new_schedule(schedules, users, medicines)
 
             elif choice == "9":
-                show_schedules(
-                    schedules,
-                    medicines
-                )
+                show_schedules(schedules)
 
             elif choice == "10":
-                schedule_id = input_positive_int(
-                    "ID расписания: "
-                )
-
-                schedule = None
-
-                for item in schedules:
-                    if item["id"] == schedule_id:
-                        schedule = item
-                        break
-
-                if schedule is None:
-                    print("Расписание не найдено.")
-                    continue
-
-                today = date.today().isoformat()
-
-                taken = is_medicine_taken(
-                    intakes,
-                    schedule_id,
-                    today
-                )
-
-                status = get_schedule_status(
-                    schedule,
-                    taken,
-                    datetime.now()
-                )
-
-                print(status)
+                check_schedule(schedules, intakes)
 
             elif choice == "11":
-                schedule_id = input_positive_int(
-                    "ID расписания: "
-                )
-
-                schedule = None
-
-                for item in schedules:
-                    if item["id"] == schedule_id:
-                        schedule = item
-                        break
-
-                if schedule is None:
-                    print("Расписание не найдено.")
-                    continue
-
-                today = date.today().isoformat()
-
-                already_taken = is_medicine_taken(
-                    intakes,
-                    schedule_id,
-                    today
-                )
-
-                if already_taken:
-                    print(
-                        "Прием на сегодня уже записан."
-                    )
-                    continue
-
-                intake = create_intake(
-                    intakes,
-                    schedule_id
-                )
-
-                save_data(
-                    INTAKES_FILE,
-                    intakes
-                )
-
-                print(
-                    f'Прием записан: '
-                    f'{intake["date"]}'
-                )
+                take_medicine(schedules, intakes)
 
             elif choice == "12":
-                schedule_id = input_positive_int(
-                    "ID расписания: "
-                )
-
-                intake_date = input(
-                    "Введите дату (ГГГГ-ММ-ДД): "
-                )
-
-                result = cancel_intake(
-                    intakes,
-                    schedule_id,
-                    intake_date
-                )
-
-                if result:
-                    save_data(
-                        INTAKES_FILE,
-                        intakes
-                    )
-
-                    print(
-                        "Запись о приеме отменена."
-                    )
-                else:
-                    print(
-                        "Запись о приеме не найдена."
-                    )
+                cancel_medicine_intake(intakes)
 
             elif choice == "13":
-                intake_date = input(
+                intake_date = input_date(
                     "Введите дату (ГГГГ-ММ-ДД): "
                 )
-
-                show_intakes(
-                    intakes,
-                    intake_date
-                )
+                show_intakes(intakes, intake_date)
 
             elif choice == "0":
+                save_users(USERS_FILE, users)
+                save_medicines(MEDICINES_FILE, medicines)
+                save_schedules(SCHEDULES_FILE, schedules)
+                save_intakes(INTAKES_FILE, intakes)
                 print("Программа завершена.")
                 break
 
             else:
-                print(
-                    "Ошибка: такого пункта меню нет."
-                )
+                print("Ошибка: такого пункта меню нет.")
 
-        except (OSError, ValueError) as error:
+        except (OSError, ValueError, KeyError) as error:
             print(f"Ошибка: {error}")
 
 
