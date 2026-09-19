@@ -16,7 +16,7 @@ def create_intake(
         "id": intake_id,
         "schedule_id": schedule_id,
         "date": intake_date,
-        "is_taken": True
+        "taken": True
     }
 
     intakes.append(intake)
@@ -28,7 +28,7 @@ def is_medicine_taken(
         schedule_id: int,
         intake_date: str
 ) -> bool:
-    """Проверяет был ли принят препарат в указанную дату."""
+    """Проверяет, был ли принят препарат в указанную дату."""
     for intake in intakes:
         if (
             intake["schedule_id"] == schedule_id
@@ -49,7 +49,7 @@ def cancel_intake(
     for intake in intakes:
         if (
             intake["schedule_id"] == schedule_id
-            and intake["intake_date"] == intake_date
+            and intake["date"] == intake_date
         ):
             intakes.remove(intake)
             return True
@@ -61,6 +61,7 @@ def get_intakes_by_date(
         intakes: list[dict],
         intake_date: str
 ) -> list[dict]:
+    """Возвращает записи о приёмах за указанную дату."""
     return [
         intake
         for intake in intakes
