@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{% if medicine %}{{ medicine.name|default:"Лекарство" }} — Мой приём{% else %}Лекарство не найдено — Мой приём{% endif %}{% endblock %}
+
+{% block content %}
+{% if medicine %}
+    <div class="page-heading">
+        <p class="eyebrow">Карточка препарата</p>
+        <h1>{{ medicine.name|default:"Без названия" }}</h1>
+    </div>
+    <section class="detail-panel">
+        <dl class="detail-list">
+            <div><dt>Идентификатор</dt><dd>{{ medicine.id }}</dd></div>
+            <div><dt>Название</dt><dd>{{ medicine.name|default:"Без названия" }}</dd></div>
+            <div><dt>Дозировка</dt><dd>{{ medicine.dosage }} {{ medicine.unit }}</dd></div>
+        </dl>
+    </section>
+{% else %}
+    <section class="empty-state">
+        <p class="eyebrow">Ошибка 404</p>
+        <h1>Лекарство не найдено</h1>
+        <p>Препарата с таким идентификатором нет в текущем JSON-хранилище.</p>
+    </section>
+{% endif %}
+<a class="btn btn-outline-secondary mt-4" href="{% url 'medicines:list' %}">← К списку лекарств</a>
+{% endblock %}

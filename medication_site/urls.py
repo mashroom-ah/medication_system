@@ -1,4 +1,4 @@
-"""Root URL configuration."""
+"""Корневая маршрутизация веб-интерфейса."""
 from django.contrib import admin
 from django.urls import include, path
 

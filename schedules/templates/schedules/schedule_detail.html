@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}{% if schedule %}Расписание №{{ schedule.id }} — Мой приём{% else %}Расписание не найдено — Мой приём{% endif %}{% endblock %}
+
+{% block content %}
+{% if schedule %}
+    <div class="page-heading">
+        <p class="eyebrow">Подробная информация</p>
+        <h1>{{ schedule.medicine.name|default:"Расписание приёма" }}</h1>
+    </div>
+    <section class="detail-panel">
+        <dl class="detail-list">
+            <div><dt>ID расписания</dt><dd>{{ schedule.id }}</dd></div>
+            <div><dt>Пользователь</dt><dd>{{ schedule.user.name|default:"Не указан" }}</dd></div>
+            <div><dt>Лекарство</dt><dd>{{ schedule.medicine.name|default:"Без названия" }}</dd></div>
+            <div><dt>Дозировка</dt><dd>{{ schedule.medicine.dosage }} {{ schedule.medicine.unit }}</dd></div>
+            <div><dt>Время</dt><dd>{{ schedule.hour|stringformat:"02d" }}:{{ schedule.minute|stringformat:"02d" }}</dd></div>
+            <div><dt>Статус</dt><dd>{{ status_text|default:"Статус пока недоступен" }}</dd></div>
+        </dl>
+    </section>
+{% else %}
+    <section class="empty-state">
+        <p class="eyebrow">Ошибка 404</p>
+        <h1>Расписание не найдено</h1>
+        <p>Расписания с таким идентификатором нет в JSON-хранилище.</p>
+    </section>
+{% endif %}
+<a class="btn btn-outline-secondary mt-4" href="{% url 'schedules:list' %}">← К расписанию</a>
+{% endblock %}

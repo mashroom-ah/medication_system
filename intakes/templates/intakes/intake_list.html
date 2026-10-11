@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}История приёмов — Мой приём{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <p class="eyebrow">Фактические приёмы</p>
+    <h1>История приёмов</h1>
+    <p class="text-muted">Записи сортируются от новых к более ранним.</p>
+</div>
+<p class="results-count">Всего записей: <strong>{{ intakes|length }}</strong></p>
+<div class="intake-list">
+    {% for intake in intakes %}
+    <article class="intake-card card mb-3">
+        <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <p class="eyebrow mb-1">Запись №{{ intake.id }}</p>
+                <h2 class="h5 mb-1">
+                    <a class="card-link" href="{% url 'intakes:detail' intake.id %}">{{ intake.schedule.medicine.name|default:"Без названия" }}</a>
+                </h2>
+                <p class="text-muted mb-0">Дата: {{ intake.date|default:"Дата не указана" }}</p>
+            </div>
+            <div>{% include "intakes/includes/intake_status.html" %}</div>
+        </div>
+    </article>
+    {% empty %}
+    <div class="empty-state">
+        <h2 class="h5">История пока пуста</h2>
+        <p class="mb-0">После регистрации приёмов записи появятся здесь.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

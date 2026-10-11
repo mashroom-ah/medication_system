@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Главная — Мой приём{% endblock %}
+
+{% block content %}
+<section class="hero-panel p-4 p-md-5 mb-4">
+    <p class="eyebrow">Забота о повседневном здоровье</p>
+    <h1 class="display-5 fw-semibold">Мой приём</h1>
+    <p class="lead hero-lead">
+        Удобный обзор лекарств, расписания и истории фактических приёмов.
+    </p>
+    <p class="mb-4">
+        Веб-интерфейс использует существующие классы предметной области и
+        загружает сведения из JSON-файлов проекта.
+    </p>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'medicines:list' %}" class="btn btn-primary">Мои лекарства</a>
+        <a href="{% url 'schedules:list' %}" class="btn btn-outline-primary">Расписание</a>
+        <a href="{% url 'intakes:list' %}" class="btn btn-outline-secondary">История приёмов</a>
+    </div>
+</section>
+<section class="row g-3" aria-label="Разделы приложения">
+    <div class="col-md-4">
+        <article class="feature-card h-100">
+            <span class="feature-number">01</span>
+            <h2 class="h5">Лекарства</h2>
+            <p>Названия, дозировки и поиск по каталогу препаратов.</p>
+            <a href="{% url 'medicines:list' %}">Открыть каталог →</a>
+        </article>
+    </div>
+    <div class="col-md-4">
+        <article class="feature-card h-100">
+            <span class="feature-number">02</span>
+            <h2 class="h5">Расписание</h2>
+            <p>Время приёма и актуальный статус по каждому расписанию.</p>
+            <a href="{% url 'schedules:list' %}">Посмотреть расписание →</a>
+        </article>
+    </div>
+    <div class="col-md-4">
+        <article class="feature-card h-100">
+            <span class="feature-number">03</span>
+            <h2 class="h5">История</h2>
+            <p>Записи о фактических приёмах и их состоянии.</p>
+            <a href="{% url 'intakes:list' %}">Открыть историю →</a>
+        </article>
+    </div>
+</section>
+{% endblock %}

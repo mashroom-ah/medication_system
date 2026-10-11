@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Лекарства — Мой приём{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <p class="eyebrow">Каталог препаратов</p>
+    <h1>Лекарства</h1>
+    <p class="text-muted">Найдите препарат и откройте подробную карточку.</p>
+</div>
+<form method="get" action="{% url 'medicines:list' %}" class="search-panel row g-2 mb-4">
+    <div class="col-sm">
+        <label class="visually-hidden" for="medicine-search">Поиск по названию</label>
+        <input
+            class="form-control"
+            id="medicine-search"
+            type="search"
+            name="q"
+            placeholder="Например, витамин C"
+            value="{{ query }}"
+        >
+    </div>
+    <div class="col-sm-auto">
+        <button class="btn btn-primary w-100" type="submit">Найти лекарство</button>
+    </div>
+    {% if query %}
+    <div class="col-sm-auto">
+        <a class="btn btn-outline-secondary w-100" href="{% url 'medicines:list' %}">Сбросить</a>
+    </div>
+    {% endif %}
+</form>
+<p class="results-count">Найдено лекарств: <strong>{{ medicines|length }}</strong></p>
+<div class="medicine-list">
+    {% for medicine in medicines %}
+        {% include "medicines/includes/medicine_card.html" %}
+    {% empty %}
+        <div class="empty-state">
+            <h2 class="h5">Лекарства не найдены</h2>
+            <p class="mb-0">Измените поисковый запрос или проверьте данные в JSON-хранилище.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

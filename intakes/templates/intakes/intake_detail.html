@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{% if intake %}Запись №{{ intake.id }} — Мой приём{% else %}Запись не найдена — Мой приём{% endif %}{% endblock %}
+
+{% block content %}
+{% if intake %}
+    <div class="page-heading">
+        <p class="eyebrow">История приёма</p>
+        <h1>Запись о приёме №{{ intake.id }}</h1>
+    </div>
+    <section class="detail-panel">
+        <dl class="detail-list">
+            <div><dt>Лекарство</dt><dd>{{ intake.schedule.medicine.name|default:"Без названия" }}</dd></div>
+            <div><dt>Пользователь</dt><dd>{{ intake.schedule.user.name|default:"Не указан" }}</dd></div>
+            <div><dt>Дата</dt><dd>{{ intake.date|default:"Дата не указана" }}</dd></div>
+            <div><dt>Время по расписанию</dt><dd>{{ intake.schedule.hour|stringformat:"02d" }}:{{ intake.schedule.minute|stringformat:"02d" }}</dd></div>
+            <div><dt>Статус</dt><dd>{% include "intakes/includes/intake_status.html" %}</dd></div>
+        </dl>
+    </section>
+{% else %}
+    <section class="empty-state">
+        <p class="eyebrow">Ошибка 404</p>
+        <h1>Запись не найдена</h1>
+        <p>Записи с таким идентификатором нет в JSON-хранилище.</p>
+    </section>
+{% endif %}
+<a class="btn btn-outline-secondary mt-4" href="{% url 'intakes:list' %}">← К истории приёмов</a>
+{% endblock %}

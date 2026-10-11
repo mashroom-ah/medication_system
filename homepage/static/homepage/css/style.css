@@ -1,0 +1,102 @@
+/* Собственные стили проекта «Мой приём». */
+:root {
+    --ink: #20333b;
+    --muted: #667980;
+    --brand: #246b68;
+    --brand-dark: #174e4b;
+    --surface: #ffffff;
+    --canvas: #f4f8f7;
+    --line: #dce8e5;
+    --accent: #e3f2ed;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--canvas);
+    color: var(--ink);
+}
+
+.site-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 4px 18px rgb(28 66 63 / 5%);
+}
+
+.site-logo {
+    display: block;
+    width: 58px;
+    height: 58px;
+}
+
+.brand-link { display: inline-flex; border-radius: 14px; }
+.brand-link:focus-visible, a:focus-visible, button:focus-visible {
+    outline: 3px solid #86c8bc;
+    outline-offset: 3px;
+}
+
+.eyebrow {
+    color: var(--brand);
+    font-size: .76rem;
+    font-weight: 750;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.site-nav { background: var(--brand-dark); }
+.site-nav .nav-link { color: #edf8f5; padding: .85rem 1rem; }
+.site-nav .nav-link:hover, .site-nav .nav-link:focus { color: #ffffff; background: rgb(255 255 255 / 10%); }
+.site-nav .navbar-toggler { border-color: rgb(255 255 255 / 45%); }
+.site-nav .navbar-toggler-icon { filter: invert(1); }
+
+main.container { flex: 1 0 auto; }
+.hero-panel {
+    border: 1px solid var(--line);
+    border-radius: 1.25rem;
+    background: linear-gradient(125deg, #ffffff 0%, #eaf6f1 100%);
+    box-shadow: 0 12px 34px rgb(28 66 63 / 6%);
+}
+.hero-lead { max-width: 48rem; color: #425c60; }
+.btn-primary { background-color: var(--brand); border-color: var(--brand); }
+.btn-primary:hover, .btn-primary:focus { background-color: var(--brand-dark); border-color: var(--brand-dark); }
+.btn-outline-primary { color: var(--brand); border-color: var(--brand); }
+.btn-outline-primary:hover { color: #fff; background: var(--brand); border-color: var(--brand); }
+
+.feature-card, .empty-state, .detail-panel, .search-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    padding: 1.25rem;
+}
+.feature-card { padding: 1.4rem; }
+.feature-card p { color: var(--muted); }
+.feature-card a, .card-link { color: var(--brand-dark); font-weight: 650; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.feature-number { display: inline-block; margin-bottom: .7rem; color: var(--brand); font-size: .8rem; font-weight: 800; letter-spacing: .12em; }
+.page-heading { margin-bottom: 1.5rem; }
+.page-heading h1 { font-weight: 700; letter-spacing: -.035em; }
+.results-count { color: var(--muted); }
+.medicine-card, .schedule-card, .intake-card {
+    border: 1px solid var(--line);
+    border-radius: .9rem;
+    box-shadow: 0 5px 18px rgb(28 66 63 / 4%);
+}
+.medicine-card .card-body, .schedule-card .card-body, .intake-card .card-body { padding: 1.25rem; }
+.schedule-time { color: var(--brand-dark); font-size: 1.15rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+.detail-panel { padding: clamp(1rem, 3vw, 2rem); }
+.detail-list { margin: 0; }
+.detail-list > div { display: grid; grid-template-columns: minmax(9rem, .7fr) minmax(0, 1.3fr); gap: 1rem; padding: .85rem 0; border-bottom: 1px solid var(--line); }
+.detail-list > div:last-child { border-bottom: 0; }
+.detail-list dt { color: var(--muted); font-weight: 500; }
+.detail-list dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+.status-chip { display: inline-block; border-radius: 999px; padding: .4rem .8rem; font-size: .85rem; font-weight: 750; }
+.status-chip--taken { color: #155b42; background: #dff5e9; }
+.status-chip--cancelled { color: #59656a; background: #e9edef; }
+.empty-state { border-style: dashed; }
+.site-footer { color: var(--muted); background: #eaf1ef; border-top: 1px solid var(--line); }
+.site-footer p { margin: 0; }
+
+@media (max-width: 575.98px) {
+    .detail-list > div { grid-template-columns: 1fr; gap: .25rem; }
+    .hero-panel { border-radius: .9rem; }
+}

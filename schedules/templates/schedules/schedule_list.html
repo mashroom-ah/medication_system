@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Расписание — Мой приём{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <p class="eyebrow">План приёма</p>
+    <h1>Расписание</h1>
+    <p class="text-muted">Статус рассчитывается по времени и истории приёмов за сегодня.</p>
+</div>
+<p class="results-count">Всего расписаний: <strong>{{ schedule_rows|length }}</strong></p>
+<div class="schedule-list">
+    {% for row in schedule_rows %}
+        {% include "schedules/includes/schedule_card.html" %}
+    {% empty %}
+        <div class="empty-state">
+            <h2 class="h5">Расписаний пока нет</h2>
+            <p class="mb-0">Добавьте расписание в консольной версии приложения.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
