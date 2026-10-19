@@ -8,6 +8,16 @@
     <h1>История приёмов</h1>
     <p class="text-muted">Записи сортируются от новых к более ранним.</p>
 </div>
+<form method="get" action="{% url 'intakes:list' %}" class="search-panel row g-2 mb-4">
+    <div class="col-sm-auto">
+        <label for="intake-date" class="form-label">Фильтр по дате</label>
+        <input class="form-control" id="intake-date" type="date" name="date" value="{{ intake_date }}">
+    </div>
+    <div class="col-sm-auto align-self-end">
+        <button class="btn btn-primary" type="submit">Показать</button>
+        {% if intake_date %}<a class="btn btn-outline-secondary" href="{% url 'intakes:list' %}">Сбросить</a>{% endif %}
+    </div>
+</form>
 <p class="results-count">Всего записей: <strong>{{ intakes|length }}</strong></p>
 <div class="intake-list">
     {% for intake in intakes %}
@@ -26,7 +36,7 @@
     {% empty %}
     <div class="empty-state">
         <h2 class="h5">История пока пуста</h2>
-        <p class="mb-0">После регистрации приёмов записи появятся здесь.</p>
+        <p class="mb-0">После регистрации приёмов записи появятся здесь или выберите другую дату.</p>
     </div>
     {% endfor %}
 </div>

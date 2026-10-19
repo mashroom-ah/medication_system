@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика — Мой приём{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <p class="eyebrow">Сводные данные SQLite</p>
+    <h1>Статистика</h1>
+    <p class="text-muted">Показатели рассчитаны SQL-запросами к реляционной базе данных.</p>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><article class="detail-panel h-100"><p>Пользователи</p><strong>{{ totals.users_count }}</strong></article></div>
+    <div class="col-6 col-lg-3"><article class="detail-panel h-100"><p>Лекарства</p><strong>{{ totals.medicines_count }}</strong></article></div>
+    <div class="col-6 col-lg-3"><article class="detail-panel h-100"><p>Расписания</p><strong>{{ totals.schedules_count }}</strong></article></div>
+    <div class="col-6 col-lg-3"><article class="detail-panel h-100"><p>Записи о приёмах</p><strong>{{ totals.intakes_count }}</strong></article></div>
+</div>
+<section class="detail-panel mb-4">
+    <h2 class="h4">Статистика по лекарствам</h2>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Лекарство</th><th>Расписания</th><th>Записи о приёмах</th></tr></thead>
+            <tbody>
+            {% for item in medicine_stats %}
+                <tr><td>{{ item.name }}</td><td>{{ item.schedules_count }}</td><td>{{ item.intakes_count }}</td></tr>
+            {% empty %}<tr><td colspan="3">Данные отсутствуют.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+<section class="detail-panel">
+    <h2 class="h4">Статусы истории приёмов</h2>
+    {% for item in status_stats %}
+        <p class="mb-1">{% if item.taken %}Принято{% else %}Отменено / не выполнено{% endif %}: <strong>{{ item.records_count }}</strong></p>
+    {% empty %}<p>Записей о приёмах пока нет.</p>{% endfor %}
+</section>
+{% endblock %}

@@ -21,6 +21,11 @@
         >
     </div>
     <div class="col-sm-auto">
+        <label class="visually-hidden" for="minimum-dosage">Минимальная дозировка</label>
+        <input class="form-control" id="minimum-dosage" type="number" min="0" step="any"
+               name="min_dosage" placeholder="Мин. дозировка" value="{{ min_dosage }}">
+    </div>
+    <div class="col-sm-auto">
         <button class="btn btn-primary w-100" type="submit">Найти лекарство</button>
     </div>
     {% if query %}
@@ -36,7 +41,7 @@
     {% empty %}
         <div class="empty-state">
             <h2 class="h5">Лекарства не найдены</h2>
-            <p class="mb-0">Измените поисковый запрос или проверьте данные в JSON-хранилище.</p>
+            <p class="mb-0">Измените поисковый запрос или проверьте данные в базе SQLite.</p>
         </div>
     {% endfor %}
 </div>
