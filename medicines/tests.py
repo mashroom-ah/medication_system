@@ -1,3 +1,59 @@
-# from django.test import TestCase
+from datetime import date
 
-# Create your tests here.
+from django.test import TestCase
+from django.urls import reverse
+
+from homepage.models import User
+from intakes.models import Intake
+from schedules.models import Schedule
+from .models import Medicine
+
+
+class MedicineORMTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create(name="Анна", age=30)
+        cls.medicine = Medicine.objects.create(
+            name="Аспирин", dosage=100, unit="мг"
+        )
+        cls.schedule = Schedule.objects.create(
+            user=cls.user,
+            medicine=cls.medicine,
+            hour=8,
+            minute=30,
+        )
+        Intake.objects.create(
+            schedule=cls.schedule,
+            intake_date=date(2026, 10, 1),
+            taken=True,
+        )
+        Medicine.objects.create(name="Витамин C", dosage=500, unit="мг")
+
+    def test_list_search_and_filter(self):
+        response = self.client.get(
+            reverse("medicines:list"),
+            {"q": "аспир", "min_dosage": "50"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Аспирин")
+        self.assertNotContains(response, "Витамин C")
+
+    def test_invalid_dosage_is_ignored(self):
+        response = self.client.get(
+            reverse("medicines:list"), {"min_dosage": "abc"}
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_detail_404(self):
+        response = self.client.get(reverse("medicines:detail", args=[99999]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_crud_and_relationships(self):
+        obj = Medicine.objects.create(name="Тест", dosage=1, unit="мг")
+        obj.dosage = 2
+        obj.save()
+        self.assertEqual(Medicine.objects.get(pk=obj.pk).dosage, 2)
+        self.assertEqual(self.schedule.medicine.name, "Аспирин")
+        self.assertEqual(self.user.schedules.count(), 1)
+        obj.delete()
+        self.assertFalse(Medicine.objects.filter(name="Тест").exists())

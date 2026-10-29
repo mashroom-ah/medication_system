@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="page-heading">
-    <p class="eyebrow">Сводные данные SQLite</p>
+    <p class="eyebrow">Сводные данные Django ORM</p>
     <h1>Статистика</h1>
-    <p class="text-muted">Показатели рассчитаны SQL-запросами к реляционной базе данных.</p>
+    <p class="text-muted">Показатели рассчитаны средствами Django ORM: Count, Avg, Min и Max.</p>
 </div>
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg-3"><article class="detail-panel h-100"><p>Пользователи</p><strong>{{ totals.users_count }}</strong></article></div>
@@ -33,4 +33,5 @@
         <p class="mb-1">{% if item.taken %}Принято{% else %}Отменено / не выполнено{% endif %}: <strong>{{ item.records_count }}</strong></p>
     {% empty %}<p>Записей о приёмах пока нет.</p>{% endfor %}
 </section>
+<section class="detail-panel mt-4"><h2 class="h4">Дополнительные показатели</h2><p>Принято записей: <strong>{{ intake_metrics.completed_count }}</strong></p><p>Среднее количество записей о приёме на расписание: <strong>{{ intake_metrics.average_per_schedule|default:"—"|floatformat:2 }}</strong></p><p>Период истории: <strong>{{ intake_metrics.earliest_date|default:"—" }}</strong> — <strong>{{ intake_metrics.latest_date|default:"—" }}</strong></p></section>
 {% endblock %}

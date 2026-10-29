@@ -17,8 +17,11 @@
         <button class="btn btn-primary" type="submit">Показать</button>
         {% if intake_date %}<a class="btn btn-outline-secondary" href="{% url 'intakes:list' %}">Сбросить</a>{% endif %}
     </div>
+    <div class="col-sm"><label class="form-label" for="intake-search">Лекарство или пользователь</label><input class="form-control" id="intake-search" type="search" name="q" value="{{ query }}"></div>
+    <div class="col-sm-auto"><label class="form-label" for="intake-status">Статус</label><select class="form-select" id="intake-status" name="status"><option value="">Все</option><option value="taken" {% if status == "taken" %}selected{% endif %}>Принято</option><option value="missed" {% if status == "missed" %}selected{% endif %}>Не принято</option></select></div>
 </form>
-<p class="results-count">Всего записей: <strong>{{ intakes|length }}</strong></p>
+{% if date_error %}<p class="alert alert-warning">Некорректная дата. Показана история без фильтра по дате.</p>{% endif %}
+<p class="results-count">Всего записей: <strong>{{ page_obj.paginator.count }}</strong></p>
 <div class="intake-list">
     {% for intake in intakes %}
     <article class="intake-card card mb-3">
@@ -40,4 +43,9 @@
     </div>
     {% endfor %}
 </div>
+{% if page_obj.paginator.num_pages > 1 %}<nav aria-label="Страницы истории" class="mt-4"><ul class="pagination">
+{% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?date={{ intake_date|urlencode }}&q={{ query|urlencode }}&status={{ status|urlencode }}&page={{ page_obj.previous_page_number }}">Назад</a></li>{% endif %}
+<li class="page-item disabled"><span class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
+{% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?date={{ intake_date|urlencode }}&q={{ query|urlencode }}&status={{ status|urlencode }}&page={{ page_obj.next_page_number }}">Вперёд</a></li>{% endif %}
+</ul></nav>{% endif %}
 {% endblock %}

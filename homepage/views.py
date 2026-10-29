@@ -1,43 +1,49 @@
-"""Представления главной страницы, статистики и страницы ошибки."""
-from contextlib import closing
-from db.database import get_connection
+"""Главная страница и статистика, рассчитанная средствами Django ORM."""
+from django.db.models import Avg, Count, Max, Min, Q
 from django.shortcuts import render
+
+from intakes.models import Intake
+from medicines.models import Medicine
+from schedules.models import Schedule
+from .models import User
 
 
 def index(request):
-    """Отображает главную страницу проекта."""
     return render(request, "homepage/index.html")
 
 
 def statistics(request):
-    """Показывает SQL-статистику по лекарствам, расписаниям и истории приёмов."""
-    with closing(get_connection()) as connection:
-        totals = connection.execute("""
-            SELECT (SELECT COUNT(*) FROM users) AS users_count,
-                   (SELECT COUNT(*) FROM medicines) AS medicines_count,
-                   (SELECT COUNT(*) FROM schedules) AS schedules_count,
-                   (SELECT COUNT(*) FROM intakes) AS intakes_count
-        """).fetchone()
-        medicine_stats = connection.execute("""
-            SELECT m.id, m.name, COUNT(DISTINCT s.id) AS schedules_count,
-                   COUNT(DISTINCT i.id) AS intakes_count
-            FROM medicines AS m
-            LEFT JOIN schedules AS s ON s.medicine_id = m.id
-            LEFT JOIN intakes AS i ON i.schedule_id = s.id
-            GROUP BY m.id, m.name
-            ORDER BY schedules_count DESC, m.name
-        """).fetchall()
-        status_stats = connection.execute("""
-            SELECT taken, COUNT(*) AS records_count
-            FROM intakes GROUP BY taken ORDER BY taken DESC
-        """).fetchall()
-    return render(request, "homepage/statistics.html", {
+    totals = {
+        "users_count": User.objects.count(),
+        "medicines_count": Medicine.objects.count(),
+        "schedules_count": Schedule.objects.count(),
+        "intakes_count": Intake.objects.count(),
+    }
+    medicine_stats = Medicine.objects.annotate(
+        schedules_count=Count("schedules", distinct=True),
+        intakes_count=Count("schedules__intakes", distinct=True),
+    ).values(
+        "name", "schedules_count", "intakes_count"
+    ).order_by("-schedules_count", "name")
+    status_stats = Intake.objects.values("taken").annotate(
+        records_count=Count("id")
+    ).order_by("-taken")
+    intake_metrics = Intake.objects.aggregate(
+        earliest_date=Min("intake_date"),
+        latest_date=Max("intake_date"),
+        completed_count=Count("id", filter=Q(taken=True)),
+    )
+    intake_metrics["average_per_schedule"] = Schedule.objects.annotate(
+        records=Count("intakes")
+    ).aggregate(value=Avg("records"))["value"]
+    context = {
         "totals": totals,
         "medicine_stats": medicine_stats,
         "status_stats": status_stats,
-    })
+        "intake_metrics": intake_metrics,
+    }
+    return render(request, "homepage/statistics.html", context)
 
 
 def page_not_found(request, exception):
-    """Возвращает пользовательскую страницу с HTTP-статусом 404."""
     return render(request, "404.html", status=404)

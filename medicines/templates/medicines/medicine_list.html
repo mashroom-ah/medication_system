@@ -28,21 +28,28 @@
     <div class="col-sm-auto">
         <button class="btn btn-primary w-100" type="submit">Найти лекарство</button>
     </div>
+    <div class="col-sm-auto"><label class="visually-hidden" for="medicine-sort">Сортировка</label><select class="form-select" id="medicine-sort" name="sort"><option value="dosage" {% if sort == "dosage" %}selected{% endif %}>Сначала меньшая дозировка</option><option value="-dosage" {% if sort == "-dosage" %}selected{% endif %}>Сначала большая дозировка</option><option value="name" {% if sort == "name" %}selected{% endif %}>По названию</option><option value="-name" {% if sort == "-name" %}selected{% endif %}>По названию наоборот</option></select></div>
     {% if query %}
     <div class="col-sm-auto">
         <a class="btn btn-outline-secondary w-100" href="{% url 'medicines:list' %}">Сбросить</a>
     </div>
     {% endif %}
 </form>
-<p class="results-count">Найдено лекарств: <strong>{{ medicines|length }}</strong></p>
+<p class="results-count">Найдено лекарств: <strong>{{ page_obj.paginator.count }}</strong></p>
 <div class="medicine-list">
     {% for medicine in medicines %}
         {% include "medicines/includes/medicine_card.html" %}
     {% empty %}
         <div class="empty-state">
             <h2 class="h5">Лекарства не найдены</h2>
-            <p class="mb-0">Измените поисковый запрос или проверьте данные в базе SQLite.</p>
+            <p class="mb-0">Измените поисковый запрос или проверьте данные в базе приложения.</p>
         </div>
     {% endfor %}
 </div>
+{% if page_obj.paginator.num_pages > 1 %}
+<nav aria-label="Страницы каталога" class="mt-4"><ul class="pagination">
+{% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?q={{ query|urlencode }}&min_dosage={{ min_dosage|urlencode }}&sort={{ sort|urlencode }}&page={{ page_obj.previous_page_number }}">Назад</a></li>{% endif %}
+<li class="page-item disabled"><span class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
+{% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?q={{ query|urlencode }}&min_dosage={{ min_dosage|urlencode }}&sort={{ sort|urlencode }}&page={{ page_obj.next_page_number }}">Вперёд</a></li>{% endif %}
+</ul></nav>{% endif %}
 {% endblock %}
