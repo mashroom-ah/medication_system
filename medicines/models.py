@@ -9,16 +9,17 @@ class Medicine(models.Model):
         max_length=200,
         db_index=True,
         verbose_name="Название",
+        blank=True,
+        help_text="Название лекарственного препарата.",
     )
-    dosage = models.FloatField(verbose_name="Дозировка")
+    dosage = models.FloatField(
+        verbose_name="Дозировка",
+        help_text="Количество действующего вещества.",
+    )
     unit = models.CharField(
         max_length=40,
         verbose_name="Единица измерения",
-    )
-    description = models.TextField(
-        blank=True,
-        default="",
-        verbose_name="Описание",
+        help_text="Например, мг или мл.",
     )
 
     class Meta:

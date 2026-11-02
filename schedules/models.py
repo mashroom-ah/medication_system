@@ -10,15 +10,23 @@ class Schedule(models.Model):
         on_delete=models.PROTECT,
         related_name="schedules",
         verbose_name="Пользователь",
+        help_text="Пользователь, для которого создано расписание.",
     )
     medicine = models.ForeignKey(
         "medicines.Medicine",
         on_delete=models.PROTECT,
         related_name="schedules",
         verbose_name="Лекарство",
+        help_text="Лекарство, которое нужно принимать.",
     )
-    hour = models.PositiveSmallIntegerField(verbose_name="Час")
-    minute = models.PositiveSmallIntegerField(verbose_name="Минута")
+    hour = models.PositiveSmallIntegerField(
+        verbose_name="Час",
+        help_text="Час приёма от 0 до 23.",
+    )
+    minute = models.PositiveSmallIntegerField(
+        verbose_name="Минута",
+        help_text="Минута приёма от 0 до 59.",
+    )
 
     class Meta:
         ordering = ["hour", "minute", "id"]

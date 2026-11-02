@@ -4,8 +4,15 @@ from django.db import models
 class User(models.Model):
     """Пользователь приложения учёта лекарств."""
 
-    name = models.CharField(max_length=150, verbose_name="Имя")
-    age = models.PositiveSmallIntegerField(verbose_name="Возраст")
+    name = models.CharField(
+        max_length=150,
+        verbose_name="Имя",
+        help_text="Имя пользователя.",
+    )
+    age = models.PositiveSmallIntegerField(
+        verbose_name="Возраст",
+        help_text="Возраст пользователя в полных годах.",
+    )
 
     class Meta:
         ordering = ["name", "id"]

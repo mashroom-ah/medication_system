@@ -9,17 +9,16 @@ class Intake(models.Model):
         on_delete=models.PROTECT,
         related_name="intakes",
         verbose_name="Расписание",
+        help_text="Расписание, по которому учитывается приём.",
     )
-    intake_date = models.DateField(verbose_name="Дата приёма")
+    intake_date = models.DateField(
+        verbose_name="Дата приёма",
+        help_text="Дата фактического приёма лекарства.",
+    )
     taken = models.BooleanField(
         default=True,
         verbose_name="Принято",
-    )
-    comment = models.TextField(
-        blank=True,
-        null=True,
-        default=None,
-        verbose_name="Комментарий",
+        help_text="Отмечает, было ли лекарство принято.",
     )
 
     class Meta:
