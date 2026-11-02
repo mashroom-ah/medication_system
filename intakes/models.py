@@ -11,7 +11,16 @@ class Intake(models.Model):
         verbose_name="Расписание",
     )
     intake_date = models.DateField(verbose_name="Дата приёма")
-    taken = models.BooleanField(default=True, verbose_name="Принято")
+    taken = models.BooleanField(
+        default=True,
+        verbose_name="Принято",
+    )
+    comment = models.TextField(
+        blank=True,
+        null=True,
+        default=None,
+        verbose_name="Комментарий",
+    )
 
     class Meta:
         ordering = ["-intake_date", "-id"]
