@@ -3,7 +3,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-local-practice-key-change-before-deployment"
-DEBUG = True
+DEBUG = True  # Только для локальной разработки; выключить в production.
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 INSTALLED_APPS = [
@@ -41,6 +41,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "homepage.context_processors.room_context",
             ],
         },
     },
@@ -58,6 +59,19 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = []
 LANGUAGE_CODE = "ru-RU"
+
+# Django Debug Toolbar подключается автоматически, если пакет установлен.
+# Это сохраняет возможность запуска проекта без необязательного инструмента.
+try:
+    import debug_toolbar  # noqa: F401
+except ImportError:
+    DEBUG_TOOLBAR_AVAILABLE = False
+else:
+    DEBUG_TOOLBAR_AVAILABLE = DEBUG
+    if DEBUG:
+        INSTALLED_APPS += ["debug_toolbar"]
+        MIDDLEWARE.insert(2, "debug_toolbar.middleware.DebugToolbarMiddleware")
+        INTERNAL_IPS = ["127.0.0.1"]
 TIME_ZONE = "Europe/Moscow"
 USE_I18N = True
 USE_TZ = True

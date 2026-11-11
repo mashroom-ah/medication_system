@@ -30,7 +30,7 @@
 <section class="detail-panel">
     <h2 class="h4">Статусы истории приёмов</h2>
     {% for item in status_stats %}
-        <p class="mb-1">{% if item.taken %}Принято{% else %}Отменено / не выполнено{% endif %}: <strong>{{ item.records_count }}</strong></p>
+        <p class="mb-1">{% if item.status == "taken" %}Принято{% elif item.status == "missed" %}Пропущено{% else %}Пропущено по решению пользователя{% endif %}: <strong>{{ item.records_count }}</strong></p>
     {% empty %}<p>Записей о приёмах пока нет.</p>{% endfor %}
 </section>
 <section class="detail-panel mt-4"><h2 class="h4">Дополнительные показатели</h2><p>Принято записей: <strong>{{ intake_metrics.completed_count }}</strong></p><p>Среднее количество записей о приёме на расписание: <strong>{{ intake_metrics.average_per_schedule|default:"—"|floatformat:2 }}</strong></p><p>Период истории: <strong>{{ intake_metrics.earliest_date|default:"—" }}</strong> — <strong>{{ intake_metrics.latest_date|default:"—" }}</strong></p></section>

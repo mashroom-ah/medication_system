@@ -98,7 +98,7 @@ class Command(BaseCommand):
                     defaults={
                         "schedule_id": row["schedule_id"],
                         "intake_date": intake_date,
-                        "taken": bool(row["taken"]),
+                        "status": "taken" if bool(row["taken"]) else "missed",
                     },
                 )
 

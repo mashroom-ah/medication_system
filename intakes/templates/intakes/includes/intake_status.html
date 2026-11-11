@@ -1,5 +1,7 @@
-{% if intake.taken %}
+{% if intake.status == "taken" %}
     <span class="status-chip status-chip--taken">Принят</span>
+{% elif intake.status == "missed" %}
+    <span class="status-chip">Пропущен</span>
 {% else %}
-    <span class="status-chip status-chip--cancelled">Отменён</span>
+    <span class="status-chip">Пропущен по решению пользователя</span>
 {% endif %}

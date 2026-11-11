@@ -1,5 +1,8 @@
 from django.db import models
 from django.db.models import Q
+from django.urls import reverse
+from django.utils.text import slugify
+from unidecode import unidecode
 
 
 class Medicine(models.Model):
@@ -11,6 +14,14 @@ class Medicine(models.Model):
         verbose_name="Название",
         blank=True,
         help_text="Название лекарственного препарата.",
+    )
+    slug = models.SlugField(
+        max_length=180,
+        unique=True,
+        db_index=False,
+        editable=False,
+        verbose_name="Адрес (slug)",
+        help_text="Уникальная часть адреса подробной страницы лекарства.",
     )
     dosage = models.FloatField(
         verbose_name="Дозировка",
@@ -32,6 +43,21 @@ class Medicine(models.Model):
                 name="medicine_dosage_positive",
             ),
         ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(unidecode(self.name)) or "medicine"
+            if self.pk is None:
+                kwargs.pop("update_fields", None)
+                super().save(*args, **kwargs)
+                self.slug = f"{base[:160]}-{self.pk}"
+                super().save(update_fields=["slug"])
+                return
+            self.slug = f"{base[:160]}-{self.pk}"
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse("medicines:detail", kwargs={"slug": self.slug})
 
     def __str__(self):
         return f"{self.name} — {self.dosage:g} {self.unit}"

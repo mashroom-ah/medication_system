@@ -5,6 +5,6 @@
             <h2 class="h5 card-title mb-1">{{ medicine.name|default:"Без названия" }}</h2>
             <p class="card-text text-muted mb-0">Дозировка: {{ medicine.dosage }} {{ medicine.unit }}</p>
         </div>
-        <a class="btn btn-outline-primary flex-shrink-0" href="{% url 'medicines:detail' medicine.id %}">Подробнее</a>
+        <a class="btn btn-outline-primary flex-shrink-0" href="{{ medicine.get_absolute_url }}">Подробнее</a>
     </div>
 </article>

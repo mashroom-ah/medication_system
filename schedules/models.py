@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import Q
+from django.db.models import Case, F, Q, Value, When
 
 
 class Schedule(models.Model):
@@ -26,6 +26,24 @@ class Schedule(models.Model):
     minute = models.PositiveSmallIntegerField(
         verbose_name="Минута",
         help_text="Минута приёма от 0 до 59.",
+    )
+    is_night = models.GeneratedField(
+        expression=Case(
+            When(Q(hour__gte=22) | Q(hour__lt=6), then=Value(True)),
+            default=Value(False),
+            output_field=models.BooleanField(),
+        ),
+        output_field=models.BooleanField(),
+        db_persist=True,
+        verbose_name="Ночное расписание",
+        help_text="Вычисляется БД: с 22:00 до 05:59.",
+    )
+    total_minutes = models.GeneratedField(
+        expression=F("hour") * 60 + F("minute"),
+        output_field=models.PositiveSmallIntegerField(),
+        db_persist=True,
+        verbose_name="Минут от начала суток",
+        help_text="Вычисляется базой данных из часа и минуты.",
     )
 
     class Meta:

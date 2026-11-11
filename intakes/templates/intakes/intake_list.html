@@ -13,12 +13,35 @@
         <label for="intake-date" class="form-label">Фильтр по дате</label>
         <input class="form-control" id="intake-date" type="date" name="date" value="{{ intake_date }}">
     </div>
+    <div class="col-sm-auto">
+        <label class="form-label" for="intake-user">Пользователь</label>
+        <select class="form-select" id="intake-user" name="user">
+            <option value="">Все</option>
+            {% for user in users %}<option value="{{ user.id }}" {% if user_id == user.id|stringformat:"s" %}selected{% endif %}>{{ user.name }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-sm-auto">
+        <label class="form-label" for="intake-medicine">Лекарство</label>
+        <select class="form-select" id="intake-medicine" name="medicine">
+            <option value="">Все</option>
+            {% for medicine in medicines %}<option value="{{ medicine.id }}" {% if medicine_id == medicine.id|stringformat:"s" %}selected{% endif %}>{{ medicine.name }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-sm-auto">
+        <label class="form-label" for="intake-sort">Сортировка</label>
+        <select class="form-select" id="intake-sort" name="sort">
+            <option value="-date" {% if sort == "-date" %}selected{% endif %}>Сначала новые</option>
+            <option value="date" {% if sort == "date" %}selected{% endif %}>Сначала старые</option>
+            <option value="user" {% if sort == "user" %}selected{% endif %}>По пользователю</option>
+            <option value="medicine" {% if sort == "medicine" %}selected{% endif %}>По лекарству</option>
+        </select>
+    </div>
     <div class="col-sm-auto align-self-end">
         <button class="btn btn-primary" type="submit">Показать</button>
         {% if intake_date %}<a class="btn btn-outline-secondary" href="{% url 'intakes:list' %}">Сбросить</a>{% endif %}
     </div>
     <div class="col-sm"><label class="form-label" for="intake-search">Лекарство или пользователь</label><input class="form-control" id="intake-search" type="search" name="q" value="{{ query }}"></div>
-    <div class="col-sm-auto"><label class="form-label" for="intake-status">Статус</label><select class="form-select" id="intake-status" name="status"><option value="">Все</option><option value="taken" {% if status == "taken" %}selected{% endif %}>Принято</option><option value="missed" {% if status == "missed" %}selected{% endif %}>Не принято</option></select></div>
+    <div class="col-sm-auto"><label class="form-label" for="intake-status">Статус</label><select class="form-select" id="intake-status" name="status"><option value="">Все</option><option value="taken" {% if status == "taken" %}selected{% endif %}>Принято</option><option value="missed" {% if status == "missed" %}selected{% endif %}>Пропущено</option><option value="skipped" {% if status == "skipped" %}selected{% endif %}>Пропущено по решению пользователя</option></select></div>
 </form>
 {% if date_error %}<p class="alert alert-warning">Некорректная дата. Показана история без фильтра по дате.</p>{% endif %}
 <p class="results-count">Всего записей: <strong>{{ page_obj.paginator.count }}</strong></p>
@@ -44,8 +67,8 @@
     {% endfor %}
 </div>
 {% if page_obj.paginator.num_pages > 1 %}<nav aria-label="Страницы истории" class="mt-4"><ul class="pagination">
-{% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?date={{ intake_date|urlencode }}&q={{ query|urlencode }}&status={{ status|urlencode }}&page={{ page_obj.previous_page_number }}">Назад</a></li>{% endif %}
+{% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?date={{ intake_date|urlencode }}&q={{ query|urlencode }}&status={{ status|urlencode }}&user={{ user_id|urlencode }}&medicine={{ medicine_id|urlencode }}&sort={{ sort|urlencode }}&page={{ page_obj.previous_page_number }}">Назад</a></li>{% endif %}
 <li class="page-item disabled"><span class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span></li>
-{% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?date={{ intake_date|urlencode }}&q={{ query|urlencode }}&status={{ status|urlencode }}&page={{ page_obj.next_page_number }}">Вперёд</a></li>{% endif %}
+{% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?date={{ intake_date|urlencode }}&q={{ query|urlencode }}&status={{ status|urlencode }}&user={{ user_id|urlencode }}&medicine={{ medicine_id|urlencode }}&sort={{ sort|urlencode }}&page={{ page_obj.next_page_number }}">Вперёд</a></li>{% endif %}
 </ul></nav>{% endif %}
 {% endblock %}

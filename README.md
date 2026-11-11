@@ -1,200 +1,209 @@
-# «Мой приём» — система учёта лекарств
+# «Мой приём» — ПР10: Django Admin и Django ORM
 
-Учебное приложение для учёта пользователей, лекарств, расписаний и фактической истории приёмов. Проект сохраняет консольный интерфейс предыдущих практических работ и веб-интерфейс Django. В ПР9 веб-слой переведён с ручных SQL-запросов на Django ORM.
+Проект учёта пользователей, лекарств, расписаний и фактической истории приёмов. Методичка описывает Roomly (Room/User/Booking), но исходный проект имеет другую предметную область. Поэтому требования ПР10 перенесены на реальные связанные сущности проекта без добавления искусственных таблиц:
 
-## Возможности
-
-- Консольная версия через `main.py`: управление пользователями, лекарствами, расписаниями и историей приёмов; JSON-хранилище.
-- Веб-интерфейс Django: главная страница, каталог лекарств с поиском/фильтром/сортировкой и пагинацией, страницы расписаний, история приёмов с фильтрами, статистика через ORM.
-- Детальные страницы возвращают HTTP 404 для отсутствующих объектов; некорректные фильтры не завершают приложение аварийно.
-- Связанные объекты загружаются через `select_related()`, статистика — через `Count`, `Avg`, `Min`, `Max`, `aggregate()` и `annotate()`.
-
-## Технологии
-
-Python 3.10+, Django 5.2, SQLite, Django Template Language, HTML/CSS/JavaScript, pytest, pytest-django и Flake8. `pytest-django` подключает настройки Django при запуске тестов через pytest; Django также предоставляет собственный запускатель тестов через `manage.py test`.
-
-## Структура данных ПР9
-
-| Модель Django | Приложение | Связи |
+| Сущность методички | Аналог в «Мой приём» | Обоснование связи |
 |---|---|---|
-| `User` | `homepage` | один пользователь — много расписаний |
-| `Medicine` | `medicines` | одно лекарство — много расписаний |
-| `Schedule` | `schedules` | `ForeignKey` на `User` и `Medicine`; обратные имена `schedules` |
-| `Intake` | `intakes` | `ForeignKey` на `Schedule`; обратное имя `intakes` |
+| Room | Medicine | Справочник объекта, к которому относятся расписания |
+| User | User | Пользователь системы |
+| Booking | Schedule / Intake | Schedule связывает User и Medicine; Intake фиксирует результат по расписанию |
 
-Для внешних ключей используется `on_delete=PROTECT`, чтобы не удалять пользователя, лекарство или расписание, пока на них ссылаются записи. Ограничения моделей проверяют возраст, положительную дозировку и диапазоны времени. Миграции находятся в каталогах `*/migrations/`.
+Ключевые связи: `User 1—N Schedule`, `Medicine 1—N Schedule`, `Schedule 1—N Intake`. Внешние ключи используют `PROTECT`.
 
 ## Установка и запуск
 
-Выполняйте команды из корня проекта (каталог, где находится `manage.py`).
+Из каталога, где находится `manage.py`:
 
 ### Windows PowerShell
 
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python manage.py check
 python manage.py makemigrations --check
 python manage.py migrate
-python manage.py import_legacy_data
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Если PowerShell запрещает активацию окружения, можно запускать интерпретатор напрямую: `\.venv\Scripts\python.exe manage.py check` и аналогично для остальных команд. На Linux/macOS создайте окружение `python3 -m venv .venv`, активируйте `source .venv/bin/activate`, затем выполните те же команды через `python`.
+Если PowerShell блокирует активацию:
 
-`data/medication.sqlite` — исходная база предыдущей реализации; команда импорта читает её в режиме только для чтения и переносит данные в `db.sqlite3`, которой управляет Django. Исходная база не изменяется. Импорт сохраняет идентификаторы и может выполняться повторно. Параметр `--clear` полностью очищает ORM-таблицы перед переносом и обычно не нужен.
-
-После запуска откройте `http://127.0.0.1:8000/`. Основные страницы: `/medicines/`, `/schedules/`, `/intakes/`, `/statistics/`. Для завершения сервера нажмите `Ctrl+C`.
-
-## Проверки ПР9
-
-Для базовой проверки конфигурации Django, состояния миграций и тестов используйте команды ниже. Все команды выполняются из каталога `med`, где лежит `manage.py`, в активированном виртуальном окружении.
-
-```bash
-python manage.py check
-python manage.py makemigrations --check
-python manage.py showmigrations
-python manage.py test
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
 ```
 
-Ожидается, что `check` завершится сообщением `System check identified no issues`, а `makemigrations --check` не найдёт изменений моделей без миграций. В `showmigrations` миграции `homepage`, `medicines`, `schedules`, `intakes` должны быть отмечены `[X]` после `migrate`.
+Linux/macOS: `python3 -m venv .venv`, `source .venv/bin/activate`, затем те же команды через `python`.
 
-Проверить перенос данных:
+Откройте `http://127.0.0.1:8000/` и `http://127.0.0.1:8000/admin/`. Для Debug Toolbar пакет устанавливается из `requirements.txt`; при `DEBUG=True` и локальном запросе появится панель.
 
-```bash
+## Миграции и сохранность данных
+
+В ПР10 добавлены миграции:
+
+- `intakes.0003_intake_status_choices`: создаёт поле `status`, переносит `taken=True` в `taken`, `taken=False` в `missed`, затем удаляет старое поле `taken`;
+- `schedules.0003_schedule_total_minutes`: добавляет вычисляемый столбец `total_minutes`;
+- `medicines.0003_medicine_slug`: добавляет `slug` и заполняет его уникальными значениями для уже существующих лекарств.
+
+**Перед миграцией сделайте копию `db.sqlite3`.** Существующие миграции не удалять и не пересоздавать. После обновления исходников выполните `python manage.py migrate`: Django применит только три новые миграции. Не запускайте `makemigrations` для ручного создания дублей — миграционные файлы уже включены в архив.
+
+Старые данные о факте приёма не теряются: data migration копирует значения boolean в статус. Совместимое свойство `Intake.taken` оставлено для старых шаблонов, но ORM-фильтры и новые записи должны использовать `status`.
+
+## ПР10 — реализация по разделам и пунктам таблицы 6.6
+
+### 1. Пункт 5.2 — административная панель
+
+Зарегистрированы все модели `User`, `Medicine`, `Schedule`, `Intake`. Настроены `ModelAdmin`, `list_display`, `search_fields`, `list_filter`, `ordering`, `list_per_page`, `list_select_related`, русские подписи и заголовки сайта. Inline-связи отражают структуру данных: расписания в карточках пользователя и лекарства; история приёмов в карточке расписания. Счётчики связей используют `annotate(Count(...))`.
+
+Адаптация: вместо Room/User/Booking используются User/Medicine/Schedule/Intake. В админке статус приёма редактируется через `TextChoices`.
+
+### 2. Пункт 5.3 — Django ORM
+
+Реализованы и используются `all`, `filter`, `exclude`, `get_object_or_404`, `Q`, `order_by`, срезы QuerySet, `values`, `select_related`, `Exists`, `OuterRef`, `F`, `annotate`, `aggregate`, `Count`, `Avg`, `Min`, `Max`, `Paginator`. Каталог лекарств фильтруется по имени/единице и дозировке, история — по дате, статусу, конкретному пользователю и конкретному лекарству; поиск работает по имени пользователя/лекарства. История поддерживает сортировку по дате, пользователю и лекарству и пагинацию. Статистика рассчитывается по связанным таблицам.
+
+### 3. Пункт 5.4.1 — Django Debug Toolbar
+
+Зависимость `django-debug-toolbar` вынесена в отдельную строку `requirements.txt`. При установленном пакете и `DEBUG=True` добавляются приложение, middleware, `INTERNAL_IPS` и маршрут `/__debug__/`. При отсутствии пакета сайт всё ещё может стартовать, но для выполнения проверки Toolbar пакет обязателен.
+
+### 4. Пункт 5.4.2 — оптимизация запросов и F()
+
+Списки расписаний и истории используют `select_related` по связям, а счётчики — `annotate`. В расписаниях применены `F("hour") * 60 + F("minute")` и `Exists` для статуса на текущую дату. `Schedule.total_minutes` — вычисляемый столбец БД. Тест `test_select_related_avoids_n_plus_one` проверяет получение связанных user/medicine одним SQL-запросом. Для визуального сравнения SQL до/после используйте Debug Toolbar на `/schedules/` и `/intakes/`.
+
+### 5. Пункт 5.4.3 — TextChoices и QuerySet Manager
+
+У `Intake` добавлено перечисление `Status` (`TAKEN`, `MISSED`, `SKIPPED`) и `IntakeQuerySet` с методами `taken()`, `missed()`, `skipped()`, `for_date(date)`. Миграция переносит старое поле `taken` в новое поле `status` и удаляет прежнее поле. Тесты проверяют методы менеджера и совместимое свойство `taken`.
+
+Адаптация: вместо статусов Booking используются статусы фактического приёма лекарства; значения описывают доменную логику проекта, а не бронирование.
+
+### 6. Пункт 5.4.4 — GeneratedField
+
+В `Schedule` добавлены два поля `GeneratedField`: `total_minutes` (`hour * 60 + minute`) и булев `is_night` (22:00–05:59). Второе поле — адаптация учебного вычисляемого признака: оно выводится из полей той же строки и не редактируется вручную. База пересчитывает значения при изменении `hour`/`minute`; тесты проверяют пересчёт через `refresh_from_db()`. Миграция `schedules.0003_schedule_total_minutes` создаёт оба generated columns. SQLite должен поддерживать generated columns (версия 3.31 или новее; проверить можно командой `python -c "import sqlite3; print(sqlite3.sqlite_version)"`).
+
+### 7. Пункт 5.4.5 — SlugField и get_absolute_url()
+
+В `Medicine` добавлено уникальное ASCII-поле `slug`; библиотека `Unidecode` транслитерирует русские названия в латиницу, а `slugify()` нормализует их. `save()` автоматически генерирует slug для новых записей и добавляет суффикс при совпадении. Миграция заполняет slug существующим записям, добавляя ID для уникальности. `get_absolute_url()` возвращает адрес `/medicines/<slug>/`; подробная страница получает объект через `get_object_or_404`. Карточки каталога и Django Admin используют `get_absolute_url()`; в админке есть публичная ссылка. Тест проверяет открытие страницы по URL и 404 для неизвестного slug.
+
+### 8. Пункт 5.4.6 — контекстный процессор
+
+Создан `homepage.context_processors.room_context` — адаптация обязательного `room_context` к предметной области приложения. Он возвращает заголовок «Мой приём» и актуальное количество лекарств. Зарегистрирован в `TEMPLATES[...]["OPTIONS"]["context_processors"]` и используется в общем шаблоне `base.html`. Запрос ограничен `count()` и не загружает все объекты.
+
+### 9. Пункт 6.1 — проверка Admin
+
+Автоматический тест проверяет регистрацию моделей. Ручная проверка: открыть `/admin/`, открыть списки User/Medicine/Schedule/Intake, проверить поиск, фильтры, сортировку, пагинацию и inline на карточках. Проверить, что названия интерфейса русские.
+
+### 10. Пункт 6.2 — проверка ORM
+
+Добавлены тесты статусов QuerySet, связей, slug URL, generated field, 404, статистики и отсутствия N+1 для связанного чтения. Для ручного подтверждения выполните shell-сценарии ниже и проверьте результаты на собственных данных.
+
+### 11. Пункт 6.3 — пользовательские сценарии
+
+Сохранены и проверяются маршруты главной страницы, каталога и карточки лекарства, списка и карточки расписания, истории приёмов и статистики. Фильтрация истории поддерживает дату, статус, выбранного пользователя, выбранное лекарство и поиск по связанным полям; каталог поддерживает поиск, минимальную дозировку, сортировку и пагинацию. Несуществующие подробные записи возвращают 404.
+
+### 12. Пункт 6.4 — качество, тесты и миграции
+
+Добавлены/обновлены тесты; `requirements.txt` исправлен (каждая зависимость на отдельной строке, добавлен `pytest-django`). Выполните `check`, `makemigrations --check`, `migrate`, `test`, `pytest` и Flake8. Перед коммитом проверьте `git status` и `git diff`; не включайте `.venv`, секреты и локальные копии БД.
+
+## Django Shell — демонстрация ORM (пункты 5.3, 5.4.3 и 6.2)
+
+```powershell
 python manage.py shell
 ```
 
 ```python
+from datetime import date
+from django.db.models import Q, Count, Avg, F
 from homepage.models import User
 from medicines.models import Medicine
 from schedules.models import Schedule
 from intakes.models import Intake
 
-print(User.objects.count(), Medicine.objects.count())
-print(Schedule.objects.select_related("user", "medicine").first())
-print(Intake.objects.select_related("schedule__user", "schedule__medicine").first())
+# all / filter / exclude / order_by / срез
+User.objects.all()
+User.objects.filter(age__gte=18)
+User.objects.exclude(age__gte=18)
+Medicine.objects.filter(Q(name__icontains="витамин") | Q(unit__iexact="мг")).order_by("name")[:10]
+
+# get и filter
+Medicine.objects.get(pk=1)            # один объект или исключение
+Medicine.objects.filter(dosage__gte=100)  # QuerySet, в том числе пустой
+
+# фильтрация по связанным моделям и select_related
+Schedule.objects.select_related("user", "medicine").filter(user__name__icontains="ан")
+Intake.objects.select_related("schedule__user", "schedule__medicine").filter(schedule__medicine__name__icontains="витамин")
+
+# QuerySet manager и статусы
+Intake.objects.taken()
+Intake.objects.missed()
+Intake.objects.skipped()
+Intake.objects.for_date(date.today())
+
+# F, annotate и aggregate
+Schedule.objects.annotate(minutes=F("hour") * 60 + F("minute")).values("id", "minutes")
+Medicine.objects.annotate(schedule_count=Count("schedules")).order_by("-schedule_count")
+Schedule.objects.annotate(intake_count=Count("intakes")).aggregate(avg=Avg("intake_count"))
+
+# GeneratedField и абсолютный URL
+schedule = Schedule.objects.select_related("user", "medicine").first()
+if schedule:
+    print(schedule.total_minutes, schedule.is_night)
+    schedule.hour = 23
+    schedule.save(update_fields=["hour"])
+    schedule.refresh_from_db()
+    print(schedule.total_minutes, schedule.is_night)  # is_night=True
+medicine = Medicine.objects.first()
+if medicine:
+    print(medicine.get_absolute_url())
 ```
 
-Проверить ORM CRUD на тестовой записи, не меняя исходные данные:
+`pk=1` в примере `get()` замените на реально существующий ID; если такого объекта нет, `DoesNotExist` является ожидаемым поведением.
 
-```python
-medicine = Medicine.objects.create(name="Тестовый препарат", dosage=1, unit="мг")
-medicine.dosage = 2
-medicine.save()
-print(Medicine.objects.filter(dosage__gte=2).values("name", "dosage"))
-medicine.delete()
-```
+## Проверка SQL и Debug Toolbar
 
-В веб-интерфейсе проверьте: поиск и минимальную дозировку в `/medicines/`; разрешённые варианты сортировки; список и карточку расписания; историю приёмов по дате, статусу и поисковой строке; статистику; несуществующие ID (ожидается 404); некорректную дату и номер страницы (страница не должна аварийно завершаться).
+1. Запустите сервер: `python manage.py runserver`.
+2. Откройте `/schedules/`, `/intakes/`, затем `/statistics/`.
+3. В панели Debug Toolbar выберите SQL.
+4. На списках проверьте, что связанные `User`, `Medicine` и `Schedule` извлекаются JOIN-запросами, а не отдельным запросом на каждую строку.
+5. Откройте подробную страницу расписания и истории приёма, сравните SQL и число запросов.
+6. Сравните список до/после `select_related` только в экспериментальном shell-запросе; не удаляйте оптимизацию из рабочего кода.
 
-## ORM-выражения, реализованные в проекте
+## Команды финальной проверки
 
-Используются `all()`/менеджеры моделей, `count()`, `filter()` по собственным и связанным полям, `exclude()`, `Q`, `get_object_or_404()`, `order_by()`, `values()`, `select_related()`, `Exists`/`OuterRef`, `annotate()`, `aggregate()`, `Count`, `Avg`, `Min`, `Max`, `Paginator`, а также `create()`, `save()` и `delete()` в тестах и проверочном сценарии. Значение сортировки выбирается из белого списка параметров, передаваемых пользователем.
-
-## Консольная версия и старый SQL-слой
-
-`main.py`, `models/`, `storage.py`, `db/database.py`, `sql/` и JSON-файлы сохранены для совместимости с предыдущими работами. Они относятся к консольной/legacy-реализации. Представления Django (`homepage`, `medicines`, `schedules`, `intakes`) больше не используют `sqlite3.connect()` и ручные SQL-запросы: веб-данные читаются и агрегируются через Django ORM.
-
-## Git
-
-Перед сдачей проверьте `git status`, добавьте исходники и миграции и зафиксируйте изменения коммитом с префиксом `PR9:`, например:
-
-```bash
-git add .
-git commit -m "PR9: переход веб-представлений на Django ORM"
-```
-
-
-## Линтеры и автоматические тесты
-
-В проекте используются два независимых инструмента контроля качества:
-
-- **Flake8** — статическая проверка Python-кода: стиль, длина строк и распространённые ошибки; правила и исключения задаются в `.flake8`.
-- **pytest** — запускает тесты предыдущей консольной реализации и тесты Django-приложений. Плагин `pytest-django` читает настройки из `pytest.ini` и подготавливает тестовую среду Django.
-
-### Установка инструментов
-
-Установите зависимости из корня проекта. Если окружение уже создано, повторная установка безопасна и добавит недостающие пакеты.
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-Проверить, что инструменты установлены и доступны текущему Python, можно так:
-
-```bash
-python -m flake8 --version
-python -m pytest --version
-python -m django --version
-```
-
-Использование `python -m ...` помогает избежать ситуации, когда команда запускается из другого Python-окружения. Если появляется `No module named flake8`, `pytest` или `django`, активируйте `.venv` и повторите установку зависимостей.
-
-### Запуск Flake8
-
-Проверить весь проект:
-
-```bash
-python -m flake8 .
-```
-
-Проверить только веб-приложения Django и конфигурацию проекта:
-
-```bash
+```powershell
+python manage.py check
+python manage.py makemigrations --check
+python manage.py showmigrations
+python manage.py migrate
+python manage.py test
+python -m pytest -v
 python -m flake8 homepage medicines schedules intakes medication_site manage.py
 ```
 
-Проверить отдельный файл, например представления лекарств:
+Успешный результат: `check` без ошибок, `makemigrations --check` сообщает `No changes detected`, все миграции отмечены `[X]`, тесты завершаются `OK`/`passed`, Flake8 не выводит замечаний.
+
+## Ручной чек-лист для защиты
+
+- [ ] `/admin/`: все четыре модели видны; поиск, фильтры, сортировка и inline работают.
+- [ ] На странице User видны расписания; на Medicine — связанные расписания; на Schedule — Intake.
+- [ ] `/medicines/`: поиск, минимальная дозировка, сортировка, пагинация; открыть карточку лекарства и проверить slug URL.
+- [ ] `/schedules/`: список отсортирован по времени, связанные пользователь/лекарство отображаются корректно.
+- [ ] `/intakes/`: фильтр по дате, статусу `taken/missed/skipped`, поиск по имени и лекарству, пагинация.
+- [ ] `/statistics/`: числа и агрегаты меняются после добавления тестовой записи.
+- [ ] Несуществующий slug лекарства, ID расписания и ID приёма дают HTTP 404.
+- [ ] Debug Toolbar отображает SQL на локальных страницах.
+- [ ] `git status` и `git diff` проверены; миграции и исходники включены в коммит.
+
+Файл `.flake8` исключает автоматически созданные каталоги миграций из проверки стиля; исходные Python-модули приложений проверяются с ограничением 100 символов.
+
+## Git
 
 ```bash
-python -m flake8 medicines/views.py
+# Если проект ещё не является Git-репозиторием:
+git init
+# Затем:
+git status
+git diff
+git add homepage medicines schedules intakes medication_site templates requirements.txt README.md pytest.ini PR10_REPORT.md
+git commit -m "PR10: Django Admin, ORM и оптимизация связанных запросов"
 ```
-
-Если Flake8 завершился без сообщений, проверенные файлы прошли линтер. Если он вывел замечания, в начале каждой строки будет путь, номер строки, код правила и описание. Исправьте замечания и повторите ту же команду. Конфигурация `.flake8` исключает виртуальные окружения, кэш и каталоги сборки; максимальная длина строки установлена в 100 символов. Проверка всего проекта может выявить замечания и в сохранённом legacy-коде консольной версии, поэтому при работе над ПР9 отдельно удобно запускать проверку Django-приложений.
-
-### Запуск тестов Django
-
-Рекомендуемый штатный запуск тестов Django:
-
-```bash
-python manage.py test
-```
-
-Django создаёт отдельную тестовую базу, запускает тесты приложений и удаляет тестовую базу после завершения. Обычная база проекта при корректно написанных тестах не должна использоваться для тестовых записей. Успешный результат заканчивается `OK`. При ошибке команда покажет имя теста и traceback.
-
-### Запуск pytest
-
-Запустить все найденные тесты, включая тесты Django-приложений и старой консольной/SQL-части:
-
-```bash
-python -m pytest
-```
-
-Получить более подробный вывод по каждому тесту:
-
-```bash
-python -m pytest -v
-```
-
-Запустить только ORM-тесты ПР9:
-
-```bash
-python -m pytest homepage/tests.py medicines/tests.py schedules/tests.py intakes/tests.py -v
-```
-
-Запустить только тесты legacy-части:
-
-```bash
-python -m pytest tests/ -v
-```
-
-Запустить один тестовый файл или один тест по имени:
-
-```bash
-python -m pytest medicines/tests.py -v
-python -m pytest medicines/tests.py::MedicineORMTests::test_detail_404 -v
-```
-
-`pytest.ini` задаёт модуль настроек `medication_site.settings` и шаблоны имён тестовых файлов. После добавления новых тестов достаточно повторить общую команду `python -m pytest`. Если тесты legacy-части сообщают, что нет исходной базы, проверьте наличие `data/medication.sqlite` в архиве проекта; этот файл является исходной SQLite-базой старой реализации и не является базой Django.

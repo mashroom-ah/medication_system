@@ -22,27 +22,26 @@ def statistics(request):
     medicine_stats = Medicine.objects.annotate(
         schedules_count=Count("schedules", distinct=True),
         intakes_count=Count("schedules__intakes", distinct=True),
-    ).values(
-        "name", "schedules_count", "intakes_count"
-    ).order_by("-schedules_count", "name")
-    status_stats = Intake.objects.values("taken").annotate(
+    ).values("name", "schedules_count", "intakes_count").order_by(
+        "-schedules_count", "name"
+    )
+    status_stats = Intake.objects.values("status").annotate(
         records_count=Count("id")
-    ).order_by("-taken")
+    ).order_by("status")
     intake_metrics = Intake.objects.aggregate(
         earliest_date=Min("intake_date"),
         latest_date=Max("intake_date"),
-        completed_count=Count("id", filter=Q(taken=True)),
+        completed_count=Count("id", filter=Q(status=Intake.Status.TAKEN)),
     )
     intake_metrics["average_per_schedule"] = Schedule.objects.annotate(
         records=Count("intakes")
     ).aggregate(value=Avg("records"))["value"]
-    context = {
+    return render(request, "homepage/statistics.html", {
         "totals": totals,
         "medicine_stats": medicine_stats,
         "status_stats": status_stats,
         "intake_metrics": intake_metrics,
-    }
-    return render(request, "homepage/statistics.html", context)
+    })
 
 
 def page_not_found(request, exception):
